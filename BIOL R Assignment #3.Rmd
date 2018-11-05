@@ -1,0 +1,110 @@
+---
+title: 'BIOL 720 Assignment #3'
+author: "Elise Millar"
+date: "November 5, 2018"
+output: html_document
+---
+
+
+#2
+
+rna_counts <- A3
+
+
+dim(rna_counts)
+
+mean_fun <- function (x=rna_counts, y=FALSE) {
+  if (y == TRUE) {
+    x <- (log2(x+0.00000001))} 
+  return(mean(x))}    
+
+mean_fun(rna_counts[,2])  
+mean_fun(rna_counts[,2], y = TRUE)  
+
+
+#3 
+
+
+dim_data <- ncol(rna_counts)
+stored_means <- rep(0, dim_data-1) 
+
+for (i in 1:dim_data) {
+  stored_means[i-1] <- mean_fun(rna_counts[,i], y=FALSE) 
+  print(colnames(rna_counts[i]))
+  print(stored_means[i-1])
+}
+
+
+#4
+
+
+sapply(rna_counts[,2:56], mean_fun) 
+
+TimeTest2 <- sapply(rna_counts[,2:56], mean_fun)
+
+TimeTest1 <- for (i in 1:dim_data) {
+  stored_means[i-1] <- mean_fun(rna_counts[,i], y=FALSE) 
+  print(colnames(rna_counts[i]))
+  print(stored_means[i-1])
+}
+
+library(microbenchmark)
+
+microbenchmark(TimeTest2)
+microbenchmark(TimeTest1)
+
+#The sapply function (TimeTest2 = Question 4) ran faster than the for loop (TimeTest1 = Question 3)
+
+
+#5
+
+
+colMeans(rna_counts[,2:56])
+
+
+#6
+
+
+nrow(rna_counts)
+stored_gene_means <- rowMeans(rna_counts[,2:56])
+print(stored_gene_means)
+
+
+#7 
+# We are very interested in what is going on in the head horns between small males and large males. 
+# Using the type of tools you have written (feel free to modify as you need, but show the new functions) calculate the mean expression for the subset of columns for large and small male head horns. 
+# Note you are calculating means on a gene by gene basis, NOT sample by sample.
+
+
+mean_gene_diff <- function (x) {
+  smM <- subset(x, select = (grepl("sm_male_hdhorn*", names(x)))) 
+  smM_mean <- rowMeans(smM)
+  lgM <- subset(x, select = (grepl("lg_male_hdhorn*", names(x))))
+  lgM_mean <- rowMeans(lgM)
+
+# Now calculate the mean difference (again gene by gene) between large male and small males (for head horns). 
+# i.e. first calculate the mean expression among individuals who are large males (head horns), ditto for the small males, and calculate their difference.
+
+  print(lgM_mean - smM_mean)
+}
+
+rna_gene_diff <- mean_gene_diff(rna_counts)
+
+
+
+#8 
+# Using the basic plot function (although you can use ggplot2 if you prefer), plot the mean expression of each gene on the X axis, and the difference in expression values on the Y axis. 
+
+
+library(ggplot2)
+theme_update(plot.title = element_text(hjust = 0.5))
+
+ggplot(rna_counts, aes(x=stored_gene_means, y=rna_gene_diff)) + geom_point() + ggtitle("Mean Gene Expression vs. Mean Gene Expression Diffrence of lgM and smM") + xlab("Mean RNA Gene Expression") + ylab("Mean RNA Expression Difference")
+
+
+
+# Now repeat, but with log2 transformed data. This is the basic idea of a MAplot.
+
+
+ggplot(rna_counts, aes(x=stored_gene_means, y=rna_gene_diff)) + geom_point() + scale_x_continuous(trans='log2') + scale_y_continuous(trans='log2') + ggtitle("Log of Mean Gene Expression vs. Mean Gene Expression Diffrence of lgM and smM") + xlab("Log Mean RNA Gene Expression") + ylab("Mean RNA Expression Difference")
+
