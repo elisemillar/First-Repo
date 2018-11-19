@@ -1,0 +1,605 @@
+---
+title: 'BIOL 720 Assignment #4'
+author: "Elise Millar"
+date: "November 17, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Course: Data Visualization with ggplot2 (Part 1)
+
+# Chapter 1: Introduction
+
+# 1) Intro
+
+- Linear model not suitable for all data, depending on trend.
+- If rely solely on numerical output w/o plotting data, miss these underlyig trends.
+
+# 2) Explore + explain
+
+- Exploratory plots are typically not pretty.
+
+# 3) Exploring ggplot2, Part 1
+
+```{r}
+library(ggplot2)
+str(mtcars)
+
+ggplot(mtcars, aes(x = cyl, y = mpg) + geom_point()
+       
+```
+
+- Gives a plot of cars binned into 4,6,8 cylinders but nothing for 5 +7 (don't exist).
+- cyl (# cylinders) is categorical, but classified as numeric in mtcars (# vs. name).
+
+# 4) Exploring ggplot2, Part 2
+
+- Change previous to:
+
+```{r}
+
+ggplot(mtcars, aes(x = factor(cyl), y = mpg) + geom_point()
+       
+```
+- Now binned into only 4,6,8.
+
+# 5) Grammar of Graphics
+
+2 Principles:
+- Graphics = distinct layers of grammatical elements.
+- Meaningful plots through aesthetic mapping.
+
+Essential Elements:
+- Data = dataset being plotted.
+- Aesthetics = scales onto which we map data.
+- Geometries = visual elements used for data.
+
+# 6) Exploring ggplot2, Part 3
+
+- To make colour dependent on displacement of car engine (disp).
+
+```{r}
+
+ggplot(mtcars, aes(x = wt, y = mpg, col = disp)) + geom_point()
+       
+```
+
+# 7) Understanding Variables
+
+- A continuous variable, such as disp, cannot be mapped to shape.
+- Shape has only a finite # of shapes (needs catgorical data).
+
+# 8) ggpolt2
+
+1st layer: Data - species, sepal length, sepal width, petal length, petal width.
+2nd layer: Aesthetics - x = sepal length, y = sepal width.
+3rd layer: Geometries - how the plot will look.
+
+- If the first plot is messy, need to use the other layers.
+
+4th layer: Facets - want to make 3 separate plots, one for each species (setosa, versicolor, virginica)
+5th layer: Statistics - add parameters, like a linear model to subplots.
+6th layer: Coordinates - specify dimensions of plot + clean up labelling + scaling of axes.
+7th layer: Theme - all non-data ink, making a publishable plot in R.
+
+# 9) Exploring ggplot2, Part 4
+
+geom_point() - draws points on the plot.
+geom_smooth() - draws smoothed line over points.
+
+# 10) Exploring ggplot2, Part 5
+
+- Uisng only geom_smooth = only smooth line no points.
+- Can colour according to clarity of diamonds by making color = clarity.
+
+Can make translucent coloured points by:
+- removing smooth layer (geom_smooth())
+- adding points layer (geom_point())
+- set alpha = 0.4 inside geom_point() (makes points 60% transparent + 40% visible)
+
+Will get a very pretty plot!
+ 
+# 11) Understanding grammar, Part 1
+
+- Can put basic info in an object.
+- And put attributes into geom layer
+
+```{r}
+
+dia_plot <- ggplot(diamonds, aes(x = carat, y = price))
+
+dia_plot + geom_point()
+
+dia_plot + geom_point(aes(col = clarity))
+       
+```
+
+# 12) Understanding grammar, Part 2
+
+- Can add geom_smooth() layer on top.
+- Exclude error shading using se = FALSE.
+- Can modify to contain aes(), map col to clarity.
+
+```{r}
+
+dia_plot <- dia_plot + geom_point(alpha = 0.2)
+
+dia_plot + geom_smooth(se = FALSE)
+
+dia_plot + geom_smooth(aes(col = clarity), se = FALSE)
+       
+```
+
+
+# Chapter 2: Data
+
+# 1) Objects + layers
+
+Base plot vs. ggplot2
+
+Base plot:
+- plot sepal length vs width
+- if want to ass petal length + width, need to add as points + colour them.
+   - plot doesn't get redrawn
+   - draws plot as image
+   - need to manually add legend
+- can only make limited kinds of plots.
+
+ggplot2:
+- used for all types of plots or even custom plots.
+- if assign base layers to object, can recycle object w variety of diff plot types.
+
+# 2) Base package + ggplot2, Part 1 - Plot
+
+- Can add new column to mtcars, fcyl. 
+
+```{r}
+
+plot(mtcars$wt, mtcars$mpg, col = mtcars$cyl)
+
+mtcars$fcyl <- as.factor(mtcars$cyl)
+
+plot(mtcars$wt, mtcars$mpg, col = mtcars$fcyl)
+       
+```
+
+- Changed from cyl = 4,6,8 to fcyl = 1,2,3.
+
+# 3) Base package + ggplot2, Part 2 - lm
+
+lm() = linear model
+lapply() = input is a vector + function. Applies the function to each element of the vector + returns a list.
+
+Ex. Can vectorize lm() over cyl variable using lapply().
+- lapply() takes each element of mtcars$cyl + calls the function in the arguement.
+- takes a value of mtcars$cyl + subsets the data so only rows w cyl == x are used.
+- fits linear model to filtered datset + uses that model to add a line to the plot w the abline() function.
+- can also make legend.
+
+```{r}
+
+carModel <- lm(mpg ~ wt, data = mtcars)
+
+abline(carModel, lty = 2)
+
+plot(mtcars$wt, mtcars$mpg, col = mtcars$cyl)
+lapply(mtcars$cyl, function(x) {
+  abline(lm(mpg ~ wt, mtcars, subset = (cyl == x)), col = x)
+})
+
+legend(x = 5, y = 33, legend = levels(mtcars$cyl), col = 1:3, pch = 1, bty = "n")
+       
+```
+
+# 4) Base package + ggplot2, Part 3
+
+- Including the lines of linear models, per cyl.
+- Including a lm for the entire dataset in its whole.
+
+```{r}
+
+ggplot(mtcars, aes(x = wt, y = mpg, col = cyl)) +
+  geom_point()
+
+ggplot(mtcars, aes(x = wt, y = mpg, col = cyl)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+
+ggplot(mtcars, aes(x = wt, y = mpg, col = cyl)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_smooth(aes(group = 1), method = "lm", se = FALSE, linetype = 2)
+       
+```
+
+# 5) ggplot2 compared to base package
+
+ggplot2:
+- creates plotting objects, which can be manipulated.
+- takes care of a lot of leg work (legends, colours).
+- built upon grammar of graphics plotting, allows better understanding b/w data + visual relationships.
+
+# 6) Proper Data Format
+
+ggplot2:
+- plot sepal length vs width.
+- add in peta length + width via geom_point.
+  - plotting space is adjusted
+  - produces a manipulatable object
+
+Colour = scale
+-  normally:
+
+```{r}
+
+ggplot(iris.wide, aes(x = Length, y = Width, col = Part)) +
+  geom_point()
+       
+```
+
+iris = both plant part + measuremnt split amongst groups.
+iris.wide = measurement split across columns.
+
+# 7) Plotting the ggplot2 way
+
+Using the method of ggplot2 vs Base R is better for this data. Use iris.wide.
+
+# 8) Tidy Data
+
+iris.wide2 = species split amongst columns.
+
+Can do either:
+
+```{r}
+
+ggplot(iris.wide2, aes(x = Part, y = Setosa, col = Measure)) +
+  geom_jitter()
+
+# OR
+
+ggplot(iris.wide2, aes(x = Measure, y = Setosa, col = Part)) +
+  geom_jitter()
+       
+```
+
+If want to do all 3 species (not just Setosa, all at once) need tody data:
+- each row contains single observation.
+- each column contains a single variable.
+  - tody format (access to all variables in dataset)
+
+facet_grid() - can compare all species in one plot (small mutiples)
+             - all on same axes (yay!)
+             
+*Depends on how mnay axes you have
+
+# 9) Variables to visuals, Part 1a
+
+iris vs. iris.wide vs. iris.tidy
+- iris.tidy has least amount of variables + most obs, most accessible. 
+
+```{r}
+
+ggplot(iris.tidy, aes(x = Species, y = Value, col = Part)) +
+  geom_jitter() +
+  facet_grid(. ~ Measure)
+       
+```
+
+# 10) Variables to visuals, Part 1b
+
+gather() - rearranges data frame by specifying columns that are catergoical variables with a -
+separate() - splits up new key column, containing former headers, according to ..
+
+Producing tidy data:
+
+```{r}
+
+iris.tidy <- iris %>%
+  gather(key, Value, -Species) %>%
+  separate(key, c("Part", "Measure""), "\\.")
+       
+```
+
+# 11) Variables to visuals, Part 2a
+
+Most suitable iris.wide plot:
+
+```{r}
+
+ggplot(iris.wide, aes(x = Length, y = Width, col = Part)) +
+  geom_jitter() +
+  facet_grid(. ~ Species)
+       
+```
+
+# 12) Variables to visuals, Part 2b
+
+Producing iris.tidy:
+
+- Add column w unique idea
+- Flower + Species are categorical.
+- Column names are Measure + Part.
+- spread() distributes new Measure column + value column into 2 columns.
+
+```{r}
+
+iris.$Flower <- 1:now(iris)
+
+iris.wide <- iris %>%
+  gather(key, value, -Species, -Flower) %>% 
+  separate(key, c("Part", "Measure"), "\\.") %>%
+  
+  spread(Measure, value)
+       
+```
+
+
+# Chapter 3: Aesthetics
+
+# 1) Visible Aesthetics 
+
+- Normally aesthetics = colour, shape, size (how it looks)
+- Here it is an attribute:
+  - use asethetics for which variable is mapped onto it (Ex. Species mapped onto colour)
+- Use aesthetics to maximize variables on a  plot.
+- x + y are aesthetics:
+  - Ex. sepal length mapped on x-axis + width mapped on y-axis
+- Changing colour of dots using col changes a visible attribute not the aesthetics.
+- Can add a 3rd variable, map species onto colour (visible aesthetic).
+- Aesthetics called in aes() + attributes called in geom_():
+  - can call aes() in geom layer
+  - only done if need to compare diff data sources
+  
+Typical aesthetics:
+x = x axis position
+y = y axis position
+colour = colour of dots, outlines of other shapes
+fill = fill colour
+size = diameter of points, thickness of lines
+alpha = trasnparency (0-1)
+linetype = line dash pattern
+labels = text on a plot or axes
+shape = shape of a point
+
+# 2) All about aesthetics, Part 1
+
+```{r}
+
+ggplot(mtcars, aes(x = wt, y = mpg, col = cyl)) +
+  geom_point(shape = 1, size = 4)
+       
+```
+
+# 3) All about aesthetics, Part 2
+
+shape = 19 - solid circle w outline same colour as inside.
+shape = 1 - hollow circle (no fill)
+shape = 16 - solid, no outline
+
+*Remember to set alpha for solid points = 1
+
+shape = 21 - use both fill for inside + col for outline. Good for mapping 2 aesthetics to a dot.
+
+```{r}
+
+ggplot(mtcars, aes(x = wt, y = mpg, fill = cyl, col = am)) +
+  geom_point(shape = 21, size = 4, alpha = 0.6)
+       
+```
+
+- Use fill when have another shape (a bar) or when using a point that has a fill + colour attribute (shape = 21 - circle w an outline).
+- New plot with col=am has 2 attributes for single dot.
+
+# 4) All about aesthetics, Part 3
+
+```{r}
+
+ggplot(mtcars, aes(x = wt, y = mpg, size = cyl)) +
+  geom_point(shape = 21, size = 4, alpha = 0.6)
+
+# vs. shape = cyl, alpha = cyl
+
+ggplot(mtcars, aes(x = wt, y = mpg, label = cyl)) +
+  geom_text()
+
+#shows names of cylinders (4,6,8)
+       
+```
+
+# 5) All about attributes, Part 1
+
+shapes = 1-20 - can only accept a colour aesthetic
+shapes = 21-25 - have both a color + fill aesthetic
+
+```{r}
+
+my_color <- ."#4ABEFF"
+
+ggplot(mtcars, aes(x = wt, y = mpg, col = cyl)) +
+  geom_point()
+
+#vs.
+
+ggplot(mtcars, aes(x = wt, y = mpg, col = cyl)) +
+  geom_point(col = my_color)
+
+# colour is overwritten
+
+ggplot(mtcars, aes(x = wt, y = mpg, fill = cyl)) +
+  geom_point(col = my_color, size = 10, shape = 23)
+
+# fill colours the inside of the dot, color outlines the dot
+       
+```
+
+# 6) All about attributes, Part 2
+
+```{r}
+
+ggplot(mtcars, aes(x = wt, y = mpg, fill = cyl)) +
+  geom_point(alpha = 0.5)
+
+
+ggplot(mtcars, aes(x = wt, y = mpg, fill = cyl, col = am)) +
+  geom_point(shape = 21, col = "yellow")
+
+
+ggplot(mtcars, aes(x = wt, y = mpg, fill = cyl, col = am)) +
+  geom_text(label = rownames(mtcars), col = "red", size = 24)      
+       
+```
+
+# 7) Going all out
+
+- Variables in a data frame mapped to aesthetics in aes().
+- Visual elements are set by attributes in specific geom layers (geom_point(col = "red"))
+
+*Aesthetics
+
+```{r}
+
+ggplot(mtcars, aes(x = mpg, y = qsec, col = factor(cyl))) +
+  geom_point()
+
+ggplot(mtcars, aes(x = mpg, y = qsec, col = factor(cyl), shape = am)) +
+  geom_point()
+
+ggplot(mtcars, aes(x = mpg, y = qsec, col = factor(cyl), shape = am, size = (hp/wt))) +
+  geom_point()   
+       
+```
+
+# 8) Aesthetics for categorical + continous variables
+
+- Label + shape are only categorical variables.
+
+# 9) Modifying Aesthetics
+
+Positions:
+- identity
+- jitter
+
+Scale Functions:
+- scale_x
+- scale_y
+- scale_color
+- scale_fill
+- scale_linetype
+- scale_shape
+
+Ex. scale_x_continuous, scale_color_discrete
+
+- Name of scale, followed by limits, breaks, labels, expand
+
+# 10) Position
+
+```{r}
+
+cyl.am <- ggplot(mtcars, aes(factor(cyl), fill = factor(am))) 
+
++ geom_bar() 
+# Gives fat bars, differing heights, made of 2 colours
+
++ geom_bar(position = "fill")
+# Gives bars reaching to top (proportions), made of 2 colours
+
++ geom_bar(position = "dodge")
+# Gives bars of differing heights, colour split into their own bars
+       
+```
+
+# 11) Setting a dummy aesthetic
+
+Univariate data = fake y axis (no real y axis)
+
+Error if only use aes(x = ..) and no y.
+
+```{r}
+
+ggplot(mtcars, aes(x = mpg, y = 0)) +
+  geom_jitter()
+
+ggplot(mtcars, aes(x = mpg, y = 0)) +
+  geom_jitter() +
+  scale_y_continuous(limits = c(-2, 2))
+       
+```
+
+# .....took way too many notes, will be skipping over a few sub-chapters..
+
+
+# Chapter 4: Geometries
+
+# 2) Scatter plots + jittering
+
+```{r}
+
+ggplot(mtcars, aes(x = cyl, y = wt)) +
+  geom_jitter()
+
+ggplot(mtcars, aes(x = cyl, y = wt)) +
+  geom_jitter(width = 0.1)
+
+ggplot(mtcars, aes(x = cyl, y = wt)) +
+  geom_jitter(position = position_jitter(0.1))
+       
+```
+
+# 4) Bar plots
+
+Histogram = shows bin distribution of cotinous variable.
+  - only need one aesthetic, x
+  - bins + not original data
+  - plot of statistical function
+- Can change binwidth
+  - Make it larger, easier to see
+  - geom_histogram(binwidth = 0.1)
+- No space b/w bars: represnts continous distribution.
+
+# 6) Position
+
+Stack = place bars on top of each other. Counts used. Default.
+Fill = place bars on top of each other, but use proportions.
+Dodge = place bars next to each other, Counts used.
+
+# 8) Overlapping histograms, Part 1
+
+Frequency polygon = specific to binned date that draws a line connecting the value of each bin.
+- takes binwidth arguement + by default stat = "bin" + position = "identity"
+
+# 15) Multiple time series, Part 1
+
+```{r}
+
+str(fish.species)
+#year + all species of salmon listed, too many variables
+
+fish.tidy <- gather(fish.species, Species, Capture, -Year)
+# now we will ahve 3 variables
+       
+```
+
+# 16) Multiple time series, Part 2
+
+```{r}
+
+ggplot(fish.tidy, aes(x = Year, y = Capture, col = Species)) +
+  geom_line()
+       
+```
+
+# Also did Chapter 5: qplot + wrap-up. Notes are in notebook. Can refer to them later if ever using qplot.
+
+
+
+
+
+
+
+
+
+
+
